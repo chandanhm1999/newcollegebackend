@@ -16,8 +16,6 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://collegefrontend-chandan-hms-projects.vercel.app",
-      "https://collegefrontend-git-main-chandan-hms-projects.vercel.app",
       "https://collegefrontend-nine.vercel.app",
     ],
     credentials: true,
