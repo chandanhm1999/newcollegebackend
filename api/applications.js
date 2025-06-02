@@ -62,6 +62,55 @@ router.post(
   }
 );
 
+router.post(
+  "/post",
+  verifyToken,
+  upload.single("resume"),
+  async (req, res, next) => {
+    try {
+      const { jobId, name, email, phone, address, coverLetter } = req.body;
+
+      const existingApp = await Application.findOne({
+        jobId,
+        userId: req.user._id,
+      });
+
+      if (existingApp) {
+        return res
+          .status(400)
+          .json({ message: "You already applied to this job" });
+      }
+
+      const file = req.file;
+      if (!file)
+        return res.status(400).json({ message: "Resume file required" });
+
+      const result = await streamUpload(file.buffer); // ⬅️ await wrapped upload
+
+      const application = await Application.create({
+        jobId,
+        userId: req.user._id,
+        name,
+        email,
+        phone,
+        address,
+        coverLetter,
+        resume: {
+          public_id: result.public_id,
+          url: result.secure_url,
+        },
+      });
+
+      res.status(200).json({
+        message: "Application submitted successfully",
+        application,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // Get Job Seeker applications
 router.get("/jobseeker/getall", verifyToken, async (req, res, next) => {
   try {
