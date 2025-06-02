@@ -27,35 +27,55 @@ router.post(
           .json({ message: "You already applied to this job" });
 
       const file = req.file;
-      const uploadRes = await cloudinary.uploader.upload_stream(
-        {
-          folder: "college-resumes",
-          resource_type: "auto",
+
+      if (!file) {
+        return res.status(400).json({ message: "Resume file required" });
+      }
+
+      // Add file type validation here:
+      const allowedFormats = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
+      if (!allowedFormats.includes(file.mimetype)) {
+        return res.status(400).json({
+          message: "Invalid file type. Only PDF, DOC, DOCX are allowed.",
+        });
+      }
+
+      const uploadRes = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: "college-resumes",
+            resource_type: "auto",
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        stream.end(file.buffer);
+      });
+
+      const application = await Application.create({
+        jobId,
+        userId: req.user._id,
+        name,
+        email,
+        phone,
+        address,
+        coverLetter,
+        resume: {
+          public_id: uploadRes.public_id,
+          url: uploadRes.secure_url,
         },
-        async (error, result) => {
-          if (error) return next(error);
+      });
 
-          const application = await Application.create({
-            jobId,
-            userId: req.user._id,
-            name,
-            email,
-            phone,
-            address,
-            coverLetter,
-            resume: {
-              public_id: result.public_id,
-              url: result.secure_url,
-            },
-          });
-
-          res.status(200).json({
-            message: "Application submitted successfully",
-            application,
-          });
-        }
-      );
-      uploadRes.end(file.buffer);
+      res.status(200).json({
+        message: "Application submitted successfully",
+        application,
+      });
     } catch (err) {
       next(err);
     }
