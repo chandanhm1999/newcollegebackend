@@ -1,3 +1,4 @@
+// Add to existing file: api/jobs.js
 import express from "express";
 import Job from "../models/jobModel.js";
 import jwt from "jsonwebtoken";
@@ -5,7 +6,7 @@ import User from "../models/userModel.js";
 
 const router = express.Router();
 
-// Auth Middleware (inline for simplicity)
+// Auth Middleware (optional for public jobs listing)
 const protectEmployer = async (req, res, next) => {
   try {
     const token = req.cookies.token;
@@ -24,6 +25,16 @@ const protectEmployer = async (req, res, next) => {
     res.status(401).json({ message: "Unauthorized" });
   }
 };
+
+// ✅ GET /api/job/getall
+router.get("/getall", async (req, res, next) => {
+  try {
+    const jobs = await Job.find().sort({ createdAt: -1 });
+    res.status(200).json({ jobs });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // POST /api/job/post
 router.post("/post", protectEmployer, async (req, res, next) => {
