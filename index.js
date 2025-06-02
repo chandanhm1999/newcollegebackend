@@ -5,6 +5,7 @@ import cors from "cors";
 import connectDB from "./utils/connectDB.js";
 import userRouter from "./api/users.js";
 import { errorHandler } from "./middleware/error.js";
+import jobRouter from "./api/jobs.js";
 
 dotenv.config();
 const app = express();
@@ -24,6 +25,7 @@ app.use(
 
 // Routes
 app.use("/api/user", userRouter);
+app.use("/api/job", jobRouter);
 
 // Error Middleware
 app.use(errorHandler);
