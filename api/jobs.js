@@ -36,6 +36,19 @@ router.get("/getall", async (req, res, next) => {
   }
 });
 
+// ✅ GET /api/job/:id — Fetch single job by ID
+router.get("/:id", async (req, res, next) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+    res.status(200).json({ job });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /api/job/post
 router.post("/post", protectEmployer, async (req, res, next) => {
   try {
