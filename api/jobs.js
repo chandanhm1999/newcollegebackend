@@ -83,4 +83,16 @@ router.post("/post", protectEmployer, async (req, res, next) => {
   }
 });
 
+// GET /api/job/getmyjobs
+router.get("/getmyjobs", protectEmployer, async (req, res, next) => {
+  try {
+    const myJobs = await Job.find({ createdBy: req.user._id }).sort({
+      createdAt: -1,
+    });
+    res.status(200).json({ myJobs });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
