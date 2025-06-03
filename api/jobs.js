@@ -47,6 +47,45 @@ router.get("/getmyjobs", protectEmployer, async (req, res, next) => {
   }
 });
 
+// ✅ PUT /api/job/update/:id — Update a job
+router.put("/update/:id", protectEmployer, async (req, res, next) => {
+  try {
+    const job = await Job.findOne({
+      _id: req.params.id,
+      createdBy: req.user._id,
+    });
+    if (!job)
+      return res
+        .status(404)
+        .json({ message: "Job not found or access denied" });
+
+    Object.assign(job, req.body); // update fields
+    await job.save();
+
+    res.status(200).json({ message: "Job updated successfully", job });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ✅ DELETE /api/job/delete/:id — Delete a job
+router.delete("/delete/:id", protectEmployer, async (req, res, next) => {
+  try {
+    const job = await Job.findOneAndDelete({
+      _id: req.params.id,
+      createdBy: req.user._id,
+    });
+    if (!job)
+      return res
+        .status(404)
+        .json({ message: "Job not found or access denied" });
+
+    res.status(200).json({ message: "Job deleted successfully" });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ✅ POST /api/job/post — Create new job
 router.post("/post", protectEmployer, async (req, res, next) => {
   try {
