@@ -1,4 +1,3 @@
-// Add to existing file: api/jobs.js
 import express from "express";
 import Job from "../models/jobModel.js";
 import jwt from "jsonwebtoken";
@@ -6,7 +5,7 @@ import User from "../models/userModel.js";
 
 const router = express.Router();
 
-// Auth Middleware (optional for public jobs listing)
+// 🔐 Employer-only Auth Middleware
 const protectEmployer = async (req, res, next) => {
   try {
     const token = req.cookies.token;
@@ -26,7 +25,7 @@ const protectEmployer = async (req, res, next) => {
   }
 };
 
-// ✅ GET /api/job/getall
+// ✅ GET /api/job/getall — Public all jobs listing
 router.get("/getall", async (req, res, next) => {
   try {
     const jobs = await Job.find().sort({ createdAt: -1 });
@@ -36,21 +35,19 @@ router.get("/getall", async (req, res, next) => {
   }
 });
 
-// ✅ GET /api/job/:id — Fetch single job by ID
-router.get("/:id", async (req, res, next) => {
+// ✅ GET /api/job/getmyjobs — Employer's jobs
+router.get("/getmyjobs", protectEmployer, async (req, res, next) => {
   try {
-    const job = await Job.findById(req.params.id);
-    if (!job) {
-      return res.status(404).json({ message: "Job not found" });
-    }
-    res.status(200).json({ job });
+    const myJobs = await Job.find({ createdBy: req.user._id }).sort({
+      createdAt: -1,
+    });
+    res.status(200).json({ myJobs });
   } catch (err) {
     next(err);
   }
 });
 
-// POST /api/job/post
-// POST /api/job/post
+// ✅ POST /api/job/post — Create new job
 router.post("/post", protectEmployer, async (req, res, next) => {
   try {
     const {
@@ -75,24 +72,24 @@ router.post("/post", protectEmployer, async (req, res, next) => {
       salaryFrom,
       salaryTo,
       fixedSalary,
-      createdBy: req.user._id, // ✅ This is the fix
+      createdBy: req.user._id, // 🔐 Important: set createdBy
     });
 
     await job.save();
-
     res.status(201).json({ message: "Job posted successfully", job });
   } catch (err) {
     next(err);
   }
 });
 
-// GET /api/job/getmyjobs
-router.get("/getmyjobs", protectEmployer, async (req, res, next) => {
+// ✅ GET /api/job/:id — Fetch single job by ID (keep this last)
+router.get("/:id", async (req, res, next) => {
   try {
-    const myJobs = await Job.find({ createdBy: req.user._id }).sort({
-      createdAt: -1,
-    });
-    res.status(200).json({ myJobs });
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+    res.status(200).json({ job });
   } catch (err) {
     next(err);
   }
