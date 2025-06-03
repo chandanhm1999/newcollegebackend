@@ -10,6 +10,7 @@ import applicationRouter from "./api/applications.js";
 
 dotenv.config();
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
@@ -24,6 +25,11 @@ app.use(
   })
 );
 
+// Health check
+app.get("/", (req, res) => {
+  res.send("API is running...");
+});
+
 // Routes
 app.use("/api/user", userRouter);
 app.use("/api/job", jobRouter);
@@ -32,7 +38,7 @@ app.use("/api/application", applicationRouter);
 // Error Middleware
 app.use(errorHandler);
 
-// Start
+// Start Server
 connectDB().then(() => {
-  app.listen(3000, () => console.log("Server running on port 3000"));
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });
