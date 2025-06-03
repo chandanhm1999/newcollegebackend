@@ -52,23 +52,23 @@ router.get("/jobseeker/getall", verifyToken, async (req, res, next) => {
 });
 
 // Get applications for Employer or Recruiter (applications to their posted jobs)
+// Get applications for Employer or Recruiter (applications to their posted jobs)
 router.get("/employer/getall", verifyToken, async (req, res, next) => {
   try {
-    // Ensure only Employers or Recruiters access this route
     if (req.user.role !== "Employer" && req.user.role !== "Recruiter") {
       return res.status(403).json({
         message: "Only Employers or Recruiters can access this route",
       });
     }
 
-    // Find all jobs posted by the current user
-    const employerJobs = await Job.find({ postedBy: req.user._id });
+    // Fix: use createdBy instead of postedBy
+    const employerJobs = await Job.find({ createdBy: req.user._id });
 
-    // Extract job IDs
     const jobIds = employerJobs.map((job) => job._id);
 
-    // Find applications for those jobs
-    const applications = await Application.find({ jobId: { $in: jobIds } });
+    const applications = await Application.find({ jobId: { $in: jobIds } })
+      .populate("jobId")
+      .populate("userId");
 
     res.status(200).json({ applications });
   } catch (err) {
