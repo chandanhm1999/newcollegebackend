@@ -16,10 +16,6 @@ const applicationSchema = new mongoose.Schema({
   phone: String,
   address: String,
   coverLetter: String,
-  resume: {
-    public_id: String,
-    url: String,
-  },
 });
 
 export default mongoose.model("Application", applicationSchema);

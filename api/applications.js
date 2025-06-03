@@ -1,6 +1,5 @@
 import express from "express";
 import multer from "multer";
-import cloudinary from "../utils/cloudinary.js";
 import Application from "../models/applicationModel.js";
 import Job from "../models/jobModel.js";
 import { verifyToken } from "../middleware/auth.js";
@@ -9,127 +8,81 @@ const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Submit application
-router.post(
-  "/submit",
-  verifyToken,
-  upload.single("resume"),
-  async (req, res, next) => {
-    try {
-      const { jobId, name, email, phone, address, coverLetter } = req.body;
+router.post("/submit", verifyToken, async (req, res, next) => {
+  try {
+    const { jobId, name, email, phone, address, coverLetter } = req.body;
 
-      const existingApp = await Application.findOne({
-        jobId,
-        userId: req.user._id,
-      });
-      if (existingApp)
-        return res
-          .status(400)
-          .json({ message: "You already applied to this job" });
-
-      const file = req.file;
-
-      if (!file) {
-        return res.status(400).json({ message: "Resume file required" });
-      }
-
-      // Add file type validation here:
-      const allowedFormats = [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      ];
-      if (!allowedFormats.includes(file.mimetype)) {
-        return res.status(400).json({
-          message: "Invalid file type. Only PDF, DOC, DOCX are allowed.",
-        });
-      }
-
-      const uploadRes = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          {
-            folder: "college-resumes",
-            resource_type: "auto",
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
-        stream.end(file.buffer);
-      });
-
-      const application = await Application.create({
-        jobId,
-        userId: req.user._id,
-        name,
-        email,
-        phone,
-        address,
-        coverLetter,
-        resume: {
-          public_id: uploadRes.public_id,
-          url: uploadRes.secure_url,
-        },
-      });
-
-      res.status(200).json({
-        message: "Application submitted successfully",
-        application,
-      });
-    } catch (err) {
-      next(err);
+    const existingApp = await Application.findOne({
+      jobId,
+      userId: req.user._id,
+    });
+    if (existingApp) {
+      return res
+        .status(400)
+        .json({ message: "You already applied to this job" });
     }
+
+    const application = await Application.create({
+      jobId,
+      userId: req.user._id,
+      name,
+      email,
+      phone,
+      address,
+      coverLetter,
+    });
+
+    res.status(200).json({
+      message: "Application submitted successfully",
+      application,
+    });
+  } catch (err) {
+    next(err);
   }
-);
+});
 
-router.post(
-  "/post",
-  verifyToken,
-  upload.single("resume"),
-  async (req, res, next) => {
-    try {
-      const { jobId, name, email, phone, address, coverLetter } = req.body;
+router.post("/post", verifyToken, async (req, res, next) => {
+  try {
+    const { jobId, name, email, phone, address, coverLetter } = req.body;
 
-      const existingApp = await Application.findOne({
-        jobId,
-        userId: req.user._id,
-      });
+    const existingApp = await Application.findOne({
+      jobId,
+      userId: req.user._id,
+    });
 
-      if (existingApp) {
-        return res
-          .status(400)
-          .json({ message: "You already applied to this job" });
-      }
-
-      const file = req.file;
-      if (!file)
-        return res.status(400).json({ message: "Resume file required" });
-
-      const result = await streamUpload(file.buffer); // ⬅️ await wrapped upload
-
-      const application = await Application.create({
-        jobId,
-        userId: req.user._id,
-        name,
-        email,
-        phone,
-        address,
-        coverLetter,
-        resume: {
-          public_id: result.public_id,
-          url: result.secure_url,
-        },
-      });
-
-      res.status(200).json({
-        message: "Application submitted successfully",
-        application,
-      });
-    } catch (err) {
-      next(err);
+    if (existingApp) {
+      return res
+        .status(400)
+        .json({ message: "You already applied to this job" });
     }
+
+    const file = req.file;
+    if (!file) return res.status(400).json({ message: "Resume file required" });
+
+    const result = await streamUpload(file.buffer); // ⬅️ await wrapped upload
+
+    const application = await Application.create({
+      jobId,
+      userId: req.user._id,
+      name,
+      email,
+      phone,
+      address,
+      coverLetter,
+      resume: {
+        public_id: result.public_id,
+        url: result.secure_url,
+      },
+    });
+
+    res.status(200).json({
+      message: "Application submitted successfully",
+      application,
+    });
+  } catch (err) {
+    next(err);
   }
-);
+});
 
 // Get Job Seeker applications
 router.get("/jobseeker/getall", verifyToken, async (req, res, next) => {
@@ -160,8 +113,6 @@ router.delete("/delete/:id", verifyToken, async (req, res, next) => {
     const application = await Application.findById(req.params.id);
     if (!application)
       return res.status(404).json({ message: "Application not found" });
-
-    await cloudinary.uploader.destroy(application.resume.public_id);
     await Application.findByIdAndDelete(req.params.id);
 
     res.status(200).json({ message: "Application deleted" });

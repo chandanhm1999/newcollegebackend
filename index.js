@@ -7,7 +7,6 @@ import userRouter from "./api/users.js";
 import { errorHandler } from "./middleware/error.js";
 import jobRouter from "./api/jobs.js";
 import applicationRouter from "./api/applications.js";
-import fileUpload from "express-fileupload";
 
 dotenv.config();
 const app = express();
@@ -25,19 +24,10 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-
 // Routes
 app.use("/api/user", userRouter);
 app.use("/api/job", jobRouter);
 app.use("/api/application", applicationRouter);
-app.use(
-  fileUpload({
-    useTempFiles: true,
-    tempFileDir: "/tmp/",
-  })
-);
 
 // Error Middleware
 app.use(errorHandler);
