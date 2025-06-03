@@ -50,6 +50,7 @@ router.get("/:id", async (req, res, next) => {
 });
 
 // POST /api/job/post
+// POST /api/job/post
 router.post("/post", protectEmployer, async (req, res, next) => {
   try {
     const {
@@ -64,7 +65,7 @@ router.post("/post", protectEmployer, async (req, res, next) => {
       fixedSalary,
     } = req.body;
 
-    const newJob = await Job.create({
+    const job = new Job({
       title,
       description,
       category,
@@ -74,10 +75,12 @@ router.post("/post", protectEmployer, async (req, res, next) => {
       salaryFrom,
       salaryTo,
       fixedSalary,
-      user: req.user._id, // ✅ Store employer's ID
+      createdBy: req.user._id, // ✅ This is the fix
     });
 
-    res.status(201).json({ message: "Job posted successfully", newJob });
+    await job.save();
+
+    res.status(201).json({ message: "Job posted successfully", job });
   } catch (err) {
     next(err);
   }
