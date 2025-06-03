@@ -39,6 +39,11 @@ const jobSchema = new mongoose.Schema(
       type: Boolean,
       default: false, // make sure this is present if you're using it in frontend
     },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

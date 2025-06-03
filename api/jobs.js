@@ -59,25 +59,25 @@ router.post("/post", protectEmployer, async (req, res, next) => {
       country,
       city,
       location,
-      fixedSalary,
       salaryFrom,
       salaryTo,
+      fixedSalary,
     } = req.body;
 
-    const job = await Job.create({
+    const newJob = await Job.create({
       title,
       description,
       category,
       country,
       city,
       location,
-      fixedSalary,
       salaryFrom,
       salaryTo,
-      createdBy: req.user._id,
+      fixedSalary,
+      user: req.user._id, // ✅ Store employer's ID
     });
 
-    res.status(201).json({ message: "Job posted successfully", job });
+    res.status(201).json({ message: "Job posted successfully", newJob });
   } catch (err) {
     next(err);
   }
