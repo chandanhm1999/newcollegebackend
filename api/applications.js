@@ -5,13 +5,9 @@ import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Submit application (Job Seeker only)
+// Submit application (no resume)
 router.post("/submit", verifyToken, async (req, res, next) => {
   try {
-    if (req.user.role !== "Job Seeker") {
-      return res.status(403).json({ message: "Only Job Seekers can apply." });
-    }
-
     const { jobId, name, email, phone, address, coverLetter } = req.body;
 
     const existingApp = await Application.findOne({
@@ -44,15 +40,10 @@ router.post("/submit", verifyToken, async (req, res, next) => {
   }
 });
 
-// Get all applications submitted by the Job Seeker
+// Get applications for Job Seeker (their own applications)
 router.get("/jobseeker/getall", verifyToken, async (req, res, next) => {
   try {
-    if (req.user.role !== "Job Seeker") {
-      return res
-        .status(403)
-        .json({ message: "Only Job Seekers can access this route" });
-    }
-
+    // Return only applications submitted by the logged-in user
     const applications = await Application.find({ userId: req.user._id });
     res.status(200).json({ applications });
   } catch (err) {
@@ -60,26 +51,32 @@ router.get("/jobseeker/getall", verifyToken, async (req, res, next) => {
   }
 });
 
-// Get all applications received by Employer or Recruiter
+// Get applications for Employer or Recruiter (applications to their posted jobs)
 router.get("/employer/getall", verifyToken, async (req, res, next) => {
   try {
+    // Ensure only Employers or Recruiters access this route
     if (req.user.role !== "Employer" && req.user.role !== "Recruiter") {
       return res.status(403).json({
         message: "Only Employers or Recruiters can access this route",
       });
     }
 
-    const jobs = await Job.find({ postedBy: req.user._id });
-    const jobIds = jobs.map((job) => job._id);
+    // Find all jobs posted by the current user
+    const employerJobs = await Job.find({ postedBy: req.user._id });
 
+    // Extract job IDs
+    const jobIds = employerJobs.map((job) => job._id);
+
+    // Find applications for those jobs
     const applications = await Application.find({ jobId: { $in: jobIds } });
+
     res.status(200).json({ applications });
   } catch (err) {
     next(err);
   }
 });
 
-// Delete application (Job Seeker can delete their own only)
+// Delete application (Job Seeker can delete their own application)
 router.delete("/delete/:id", verifyToken, async (req, res, next) => {
   try {
     const application = await Application.findById(req.params.id);
@@ -88,11 +85,11 @@ router.delete("/delete/:id", verifyToken, async (req, res, next) => {
       return res.status(404).json({ message: "Application not found" });
     }
 
-    if (
-      req.user.role !== "Job Seeker" ||
-      application.userId.toString() !== req.user._id.toString()
-    ) {
-      return res.status(403).json({ message: "Access denied" });
+    // Only the Job Seeker who owns this application can delete it
+    if (application.userId.toString() !== req.user._id.toString()) {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized to delete this application" });
     }
 
     await Application.findByIdAndDelete(req.params.id);
