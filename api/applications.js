@@ -76,6 +76,38 @@ router.get("/employer/getall", verifyToken, async (req, res, next) => {
   }
 });
 
+// Update application (Job Seeker can update their own application)
+router.put("/edit/:id", verifyToken, async (req, res, next) => {
+  try {
+    const application = await Application.findById(req.params.id);
+
+    if (!application) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+
+    // Only the Job Seeker who owns this application can edit it
+    if (application.userId.toString() !== req.user._id.toString()) {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized to edit this application" });
+    }
+
+    const { name, email, phone, address, coverLetter } = req.body;
+
+    application.name = name || application.name;
+    application.email = email || application.email;
+    application.phone = phone || application.phone;
+    application.address = address || application.address;
+    application.coverLetter = coverLetter || application.coverLetter;
+
+    await application.save();
+
+    res.status(200).json({ message: "Application updated", application });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Delete application (Job Seeker can delete their own application)
 router.delete("/delete/:id", verifyToken, async (req, res, next) => {
   try {
